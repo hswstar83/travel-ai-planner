@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✈️ AI 여행 계획 치트키</title>
+    <title>✈️ AI 여행 계획 생성기</title>
     <style>
         :root { --primary: #007AFF; --bg: #F2F2F7; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; margin: 0; }
@@ -32,9 +32,8 @@
         #fallbackArea { display: none; margin-top: 20px; padding: 20px; background: #fff8e1; border-radius: 12px; border: 1px solid #ffe082; }
         #fallbackArea h3 { margin-top: 0; color: #f57f17; font-size: 16px; }
         #fallbackArea p { font-size: 13px; color: #f57f17; margin-bottom: 10px; }
-        #manualPrompt { background: #fff; border: 1px solid #ffe082; color: #555; font-size: 12px; height: 120px; margin-bottom: 10px; }
-        .copy-btn { background-color: #fbc02d; color: #333; margin-top: 0; }
-        .copy-btn:hover { background-color: #f9a825; }
+        #manualPrompt { background: #fff; border: 1px solid #ffe082; color: #555; font-size: 12px; height: 120px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
+        .copy-btn { background-color: #fbc02d; color: #333; margin-top: 10px; }
 
         .footer { text-align: center; margin-top: 30px; font-size: 11px; color: #aaa; }
     </style>
@@ -42,8 +41,8 @@
 <body>
 
 <div class="container">
-    <h1>✈️ 원클릭 여행 비서</h1>
-    <p class="subtitle">입력만 하면 날씨, 동선, 병원 정보까지<br>AI가 완벽한 계획표를 짜드립니다.</p>
+    <h1>✈️ AI 여행 계획 자동 생성기</h1>
+    <p class="subtitle">여행 정보를 입력하면<br>AI가 상세한 계획표를 즉시 만들어드립니다.</p>
 
     <label>여행지</label>
     <input type="text" id="destination" placeholder="예: 베트남 다낭, 나만 리트리트">
@@ -61,17 +60,17 @@
     
     <div class="loader" id="loader">
         <div class="spinner"></div>
-        <p style="font-size: 13px; color: #666;">AI가 최적의 경로를 분석 중입니다...<br>(약 10~20초 소요)</p>
+        <p style="font-size: 13px; color: #666;">AI가 최적의 경로를 분석 중입니다...<br>(약 10~15초 소요)</p>
     </div>
 
     <div id="resultArea">
-        <h3 style="margin-bottom: 10px;">📍 AI 여행 계획표</h3>
+        <h3 style="margin-bottom: 10px;">📍 AI가 제안하는 여행 계획</h3>
         <div id="output"></div>
     </div>
 
     <div id="fallbackArea">
-        <h3>⚠️ 접속자가 많아 '주문서 모드'로 전환됨</h3>
-        <p>현재 이용자가 너무 많아 AI 연결이 지연되고 있습니다.<br>대신 <b>아래 완성된 주문서</b>를 복사해서 <b>Gemini(제미나이)</b>나 <b>ChatGPT</b>에 붙여넣으면 똑같은 결과를 받을 수 있습니다!</p>
+        <h3>⚠️ AI 서버 접속량 폭주</h3>
+        <p>현재 이용자가 많아 자동 생성이 지연되고 있습니다.<br>대신 아래 <b>주문서</b>를 복사해서 제미나이/챗GPT에 붙여넣으세요!</p>
         <textarea id="manualPrompt" readonly></textarea>
         <button class="copy-btn" onclick="copyPrompt()">📋 주문서 복사하기</button>
     </div>
@@ -90,76 +89,65 @@
 
         if(!dest || !dates) { alert("여행지와 날짜는 꼭 입력해주세요!"); return; }
 
-        // 버튼 잠금 및 로딩 시작
+        // 로딩 시작
         document.getElementById('generateBtn').disabled = true;
         document.getElementById('generateBtn').innerText = "분석 중...";
         document.getElementById('loader').style.display = 'block';
         document.getElementById('resultArea').style.display = 'none';
         document.getElementById('fallbackArea').style.display = 'none';
 
-        // V2.0 상세 프롬프트 (성공/실패 시 모두 사용)
+        // AI에게 보낼 프롬프트 (자동 전송용)
         const prompt = `
-# 역할 부여
-당신은 20년 경력의 현지 전문 여행 가이드입니다. 여행지: [${dest}], 일정: [${dates}], 인원: [${members}]
-가장 중요한 원칙은 **구성원의 안전과 컨디션 조절**입니다.
+# 역할: 당신은 20년 경력의 베트남/동남아 전문 여행 가이드입니다.
+# 목표: 아래 정보를 바탕으로 여행자가 바로 사용할 수 있는 구체적인 여행 계획서를 작성해주세요.
 
-# 필수 요청 사항 (상세히 작성)
-1. [날씨 & 준비물] 위성 날씨 예보를 기반으로 한 옷차림 및 필수 준비물(우산, 비상약 등) 체크리스트
-2. [안전 정보] 최근 현지 이슈(치안, 날씨) 팩트 체크 및 숙소 근처 '종합병원'과 '24시 약국' 구글맵 위치 정보
-3. [교통 & 팁] 공항-숙소, 관광지 이동 시 Grab 예상 비용 및 상황별 적정 팁 금액(마사지, 호텔 등) 가이드
-4. [4박 5일 상세 일정] '오전 휴식/수영 - 오후 관광' 패턴으로 구성원 체력을 고려한 최적 동선. 맛집은 구글 평점 4.5 이상만 추천(구글맵 링크 필수).
-5. [호텔 문의 이메일] 요청사항(${special})을 포함한 정중한 영어 이메일 초안.
+- 여행지: ${dest}
+- 일정: ${dates}
+- 인원: ${members}
+- 요청사항: ${special}
 
-# 추가 요청: ${special}
+# 작성 가이드 (필수 포함)
+1. [날씨 & 옷차림]: 위성 날씨 데이터를 기반으로 구체적인 옷차림과 우산 필요 여부.
+2. [이동 & 교통]: 공항 픽업, 그랩 예상 비용(4인승/7인승), 추천 이동 수단.
+3. [안전 & 병원]: 최근 현지 이슈 팩트체크, 숙소 근처 비상 병원/약국 위치.
+4. [상세 일정표]: 3대 가족의 체력을 고려한 여유로운 일정 (맛집은 구글평점 4.5 이상 추천 및 구글맵 검색 팁 포함).
+5. [호텔 문의 메일]: 요청사항(${special})을 반영한 영어 문의 메일 초안.
 
-위 내용을 가독성 좋은 표와 불렛 포인트로 정리해 주세요.
+결과는 가독성 좋게 **제목**과 - 목록을 사용하여 깔끔하게 정리해주세요.
 `;
 
         try {
-            // 1. API 호출 시도 (timeout 25초 설정)
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 25000);
-
+            // 1단계: API 호출 (AI에게 요청 보내기)
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt }),
-                signal: controller.signal
+                body: JSON.stringify({ prompt: prompt })
             });
-            clearTimeout(timeoutId);
 
             const data = await response.json();
             
-            // 2. 에러 체크 (API 한도 초과 또는 서버 오류)
-            if (!response.ok || data.error) throw new Error("API Limit or Error");
+            // 2단계: 결과 확인
+            if (!response.ok || data.error) {
+                throw new Error("API Error");
+            }
 
-            // 3. 성공 시 결과 출력
-            let cleanResult = data.result
-                .replace(/\n/g, '<br>')
-                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                .replace(/###/g, '')
-                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" style="color:#007AFF;text-decoration:none;">$1 🔗</a>'); // 링크 변환
+            // 3단계: 화면에 결과 보여주기 (줄바꿈, 볼드체 처리)
+            let formattedResult = data.result
+                .replace(/\n/g, '<br>') // 줄바꿈
+                .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#007AFF;">$1</strong>') // 강조
+                .replace(/###/g, '') // 마크다운 기호 제거
+                .replace(/- /g, '• '); // 목록 기호 변경
 
-            document.getElementById('output').innerHTML = cleanResult;
+            document.getElementById('output').innerHTML = formattedResult;
             document.getElementById('resultArea').style.display = 'block';
 
         } catch (error) {
-            // 4. 실패 시 '플랜 B (복사 모드)'로 전환
-            console.log("Fallback triggered:", error);
+            // 실패 시 복사 모드로 전환
+            console.error("Error:", error);
             document.getElementById('manualPrompt').value = prompt.trim();
             document.getElementById('fallbackArea').style.display = 'block';
-            
-            // 화면을 아래로 스크롤해서 안내문 보여주기
-            setTimeout(() => {
-                document.getElementById('fallbackArea').scrollIntoView({behavior: 'smooth'});
-            }, 100);
-            
-            if(error.name === 'AbortError') {
-                alert("답변이 너무 길어지고 있어요! \n아래 '주문서'를 복사해서 제미나이에 직접 물어보는 게 더 빠릅니다.");
-            }
-
+            alert("AI 연결이 지연되어 '주문서 복사 모드'로 전환합니다.");
         } finally {
-            // 마무리 (버튼 복구)
             document.getElementById('generateBtn').disabled = false;
             document.getElementById('generateBtn').innerText = "✨ 여행 계획 생성하기";
             document.getElementById('loader').style.display = 'none';
@@ -171,7 +159,7 @@
         copyText.select();
         copyText.setSelectionRange(0, 99999);
         navigator.clipboard.writeText(copyText.value).then(() => {
-            alert("주문서 복사 완료! \nGemini나 ChatGPT 앱을 켜고 붙여넣으세요. ✈️");
+            alert("주문서 복사 완료! Gemini 앱에 붙여넣으세요.");
         });
     }
 </script>
