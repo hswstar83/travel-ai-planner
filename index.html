@@ -1,60 +1,3 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✈️ AI 여행 계획 생성기</title>
-    <style>
-        :root { --primary: #007AFF; --bg: #F2F2F7; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
-        .container { max-width: 600px; width: 100%; background: #fff; border-radius: 20px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        h1 { text-align: center; font-size: 22px; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 25px; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; font-family: inherit; }
-        button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 14px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        
-        /* 결과 화면 스타일 */
-        #resultArea { display: none; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-        #output { white-space: pre-wrap; line-height: 1.6; font-size: 15px; color: #333; background: #f9f9f9; padding: 15px; border-radius: 10px; }
-        
-        /* 로딩 애니메이션 */
-        .loader { display: none; text-align: center; margin-top: 20px; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>✈️ 원클릭 여행 계획표</h1>
-    <p class="subtitle">AI가 날씨, 동선, 맛집까지 10초 만에 짜드립니다.</p>
-
-    <label>여행지</label>
-    <input type="text" id="destination" placeholder="예: 다낭 나만 리트리트">
-
-    <label>날짜 & 기간</label>
-    <input type="text" id="dates" placeholder="예: 12월 19일 ~ 23일">
-
-    <label>인원 구성</label>
-    <input type="text" id="members" placeholder="예: 부모님, 부부, 7세 아이">
-
-    <label>특별 요청</label>
-    <textarea id="special" rows="2" placeholder="예: 수영장 온수 여부, 키즈 마사지 필수"></textarea>
-
-    <button id="generateBtn" onclick="generatePlan()">✨ 여행 계획 생성하기</button>
-    
-    <div class="loader" id="loader">
-        <div class="spinner"></div>
-        <p>AI가 여행 계획을 짜고 있어요...<br>(최대 30초 정도 걸립니다)</p>
-    </div>
-
-    <div id="resultArea">
-        <h3>📍 AI 여행 계획표</h3>
-        <div id="output"></div>
-    </div>
-</div>
-
 <script>
     async function generatePlan() {
         const dest = document.getElementById('destination').value;
@@ -64,12 +7,11 @@
 
         if(!dest || !dates) { alert("여행지와 날짜를 입력해주세요!"); return; }
 
-        // 버튼 비활성화 및 로딩 표시
         document.getElementById('generateBtn').disabled = true;
         document.getElementById('loader').style.display = 'block';
         document.getElementById('resultArea').style.display = 'none';
+        document.getElementById('fallbackArea').style.display = 'none'; // 복사 영역 숨기기
 
-        // 프롬프트 구성 (서버로 보낼 내용)
         const prompt = `
 당신은 베트남 전문 여행 가이드입니다. 아래 정보를 바탕으로 표와 불렛포인트를 써서 가독성 좋은 여행 계획을 짜주세요.
 
@@ -87,6 +29,7 @@
 `;
 
         try {
+            // 1. API 호출 시도
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -95,23 +38,34 @@
 
             const data = await response.json();
             
-            if (data.error) throw new Error(data.error);
+            // 2. 에러 체크 (사람 몰려서 에러나면 catch로 이동)
+            if (!response.ok || data.error) throw new Error("Traffic Limit");
 
-            // 결과 보여주기
+            // 3. 성공 시 결과 출력
             document.getElementById('output').innerHTML = data.result
-                .replace(/\n/g, '<br>') // 줄바꿈 처리
-                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>'); // 볼드체 처리
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
             
             document.getElementById('resultArea').style.display = 'block';
 
         } catch (error) {
-            alert("오류가 발생했습니다: " + error.message);
+            // 4. 실패 시 '복사 모드'로 전환 (플랜 B)
+            document.getElementById('fallbackArea').style.display = 'block';
+            document.getElementById('manualPrompt').value = prompt;
+            alert("현재 접속자가 많아 AI 응답이 지연되고 있습니다. 😭\n대신 생성된 '주문서'를 복사해서 바로 사용하세요!");
+            document.getElementById('fallbackArea').scrollIntoView({behavior: 'smooth'});
         } finally {
             document.getElementById('generateBtn').disabled = false;
             document.getElementById('loader').style.display = 'none';
         }
     }
-</script>
 
-</body>
-</html>
+    function copyPrompt() {
+        const copyText = document.getElementById("manualPrompt");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            alert("주문서 복사 완료! Gemini나 챗GPT에 붙여넣으세요.");
+        });
+    }
+</script>
