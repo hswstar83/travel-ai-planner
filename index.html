@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✈️ AI 여행 계획 치트키</title>
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-color: #1C1C1E;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 480px;
+            width: 100%;
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            font-size: 22px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        p.subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: #8E8E93;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #333;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #D1D1D6;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box; 
+            font-family: inherit;
+            background-color: #F9F9F9;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        button:hover {
+            background-color: #0062cc;
+        }
+        #resultArea {
+            display: none;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #E5E5EA;
+        }
+        .result-box {
+            width: 100%;
+            height: 180px;
+            padding: 15px;
+            background-color: #F2F2F7;
+            border: 1px solid #E5E5EA;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #555;
+            resize: none;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .copy-btn {
+            background-color: #34C759;
+            margin-top: 5px;
+        }
+        .copy-btn:hover {
+            background-color: #2da84a;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 11px;
+            color: #aaa;
+        }
+        .badge {
+            display: inline-block;
+            background: #EBF5FF;
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align: center;">
+        <span class="badge">AI 여행 비서 V2.0</span>
+    </div>
+    <h1>✈️ 여행 계획 치트키</h1>
+    <p class="subtitle">입력만 하면 날씨, 병원, 팁 문화, 동선까지<br>완벽한 여행 계획표를 만들어드려요!</p>
+
+    <div class="form-group">
+        <label>여행지 (도시, 호텔명)</label>
+        <input type="text" id="destination" placeholder="예: 베트남 다낭, 나만 리트리트">
+    </div>
+
+    <div class="form-group">
+        <label>여행 날짜</label>
+        <input type="text" id="dates" placeholder="예: 12월 19일 ~ 23일 (4박 5일)">
+    </div>
+
+    <div class="form-group">
+        <label>함께하는 사람 (구성)</label>
+        <input type="text" id="members" placeholder="예: 부모님(70대), 부부, 아이(7세)">
+    </div>
+
+    <div class="form-group">
+        <label>항공편 (선택 사항)</label>
+        <input type="text" id="flights" placeholder="예: 인천발 VJ879(10시 도착)">
+    </div>
+
+    <div class="form-group">
+        <label>특별 요청 / 궁금한 점</label>
+        <textarea id="special" rows="2" placeholder="예: 키즈 마사지 필수, 얼리 체크인, 고수 빼주세요"></textarea>
+    </div>
+
+    <button onclick="generatePrompt()">✨ AI 주문서 생성하기</button>
+
+    <div id="resultArea">
+        <label style="color:var(--primary-color)">👇 아래 주문서가 생성되었습니다!</label>
+        <textarea id="promptOutput" class="result-box" readonly></textarea>
+        <button class="copy-btn" onclick="copyToClipboard()">📋 복사해서 AI에게 붙여넣기</button>
+        <p style="font-size:12px; color:#888; text-align:center; margin-top:10px;">
+            복사 후 <b>ChatGPT</b>나 <b>Gemini</b> 앱에 붙여넣으세요.
+        </p>
+    </div>
+    
+    <div class="footer">
+        © 2025 AI Travel Helper | Powered by Gemini
+    </div>
+</div>
+
+<script>
+    function generatePrompt() {
+        const dest = document.getElementById('destination').value || '여행지';
+        const dates = document.getElementById('dates').value || '미정';
+        const members = document.getElementById('members').value || '가족';
+        const flights = document.getElementById('flights').value || '미정';
+        const special = document.getElementById('special').value || '특별한 요청 없음';
+
+        // V2.0 프롬프트 내용
+        const promptText = `
+# 역할 부여
+당신은 지금부터 20년 경력의 동남아시아 전문 여행 가이드이자 현지 컨시어지입니다. 
+여행지는 [${dest}] 입니다. [${members}] 구성원이 함께하는 여행이므로, **구성원의 체력 보존과 안전**을 최우선 원칙으로 삼아주세요.
+
+# 여행 기본 정보
+1. 날짜: ${dates}
+2. 장소: ${dest}
+3. 인원 구성: ${members}
+4. 항공편: ${flights}
+5. 특별 요청: ${special}
+
+# 필수 요청 사항 (총 7단계로 상세히 작성해주세요)
+
+1. [초정밀 날씨 & 짐 싸기 전략]
+   - 여행 기간의 위성 날씨 예보를 검색하여 날짜별 기온/강수 확률을 표로 정리해주세요.
+   - 날씨 데이터를 기반으로 **'옷차림 가이드(겉옷 두께 등)'**와 **'필수 준비물(샤워필터, 상비약, 휴대용 선풍기 등)'** 체크리스트를 만들어주세요.
+
+2. [안전 및 비상 상황 대비 (팩트 체크)]
+   - 최근 [${dest}]의 이슈(홍수, 전염병, 치안)를 뉴스 검색하여 안전 여부를 판단해주세요.
+   - 만약의 상황을 대비해 숙소([${dest}] 근처)에서 가장 가까운 **'평판 좋은 종합병원'**과 **'24시간 약국'**의 이름과 구글맵 위치 정보를 찾아주세요. (아이와 어르신을 위해 필수)
+
+3. [환전, 팁, 필수 앱 (현지 꿀팁)]
+   - 가장 유리한 환전 방법(한국에서 달러 vs 현지 ATM 등)과 적정 환전 금액을 알려주세요.
+   - 현지의 **팁 문화(마사지, 호텔, 식당)**에 대해 '얼마를 줘야 매너 있는지' 구체적인 금액(현지 통화)으로 가이드해주세요.
+   - 여행의 질을 높여줄 필수 앱(Grab, 배달앱 등) 리스트를 알려주세요.
+
+4. [동선 최적화 & 교통비 견적]
+   - 공항↔숙소, 숙소↔주요 관광지 이동 시 'Grab(그랩)' 7인승/4인승 기준 예상 요금을 표로 정리해주세요.
+   - 날씨를 고려해 동선 낭비가 없는 최적의 이동 경로를 제안해주세요.
+
+5. [구성원 맞춤형 4박 5일 상세 일정표]
+   - **[오전: 휴식/수영] - [오후: 관광/마사지]** 패턴을 기본으로 하되, 인원 구성에 맞춰 유연하게 짜주세요.
+   - **맛집 추천:** 구글 평점 4.5 이상인 곳 중, **'한국인 입맛에 실패 없는 메뉴'**를 콕 집어 추천하고, 반드시 **[구글 맵 바로가기 링크]**를 첨부해주세요.
+   - **쇼핑 리스트:** 현지 마트(롯데마트/빅씨 등)와 야시장에서 꼭 사야 할 **기념품 및 간식 추천 리스트**를 작성해주세요.
+
+6. [체험 및 즐길 거리]
+   - [${dest}]에서 꼭 해야 할 체험(마사지, 쿠킹클래스, 야경 투어 등) 정보를 가격대와 함께 추천해주세요.
+   - 아이를 위한 키즈 마사지나 키즈 클럽 정보가 있다면 포함해주세요.
+
+7. [리조트/호텔 문의 이메일 초안]
+   - 아래 요청 사항을 포함한 정중한 영어 이메일 초안을 작성해주세요.
+   - 요청 사항: ${special} (예: 얼리 체크인, 커넥팅 룸, 공항 픽업 가격 문의, 아기 침대 등)
+
+# 출력 형식
+- 스마트폰에서 읽기 편하도록 **가독성 좋은 표와 불렛 포인트**를 적극 활용해주세요.
+- 각 섹션 사이에 구분선을 넣어 내용을 명확히 분리해주세요.
+- 제일 먼저 **[여행 요약 및 핵심 조언]**을 3줄로 요약해서 보여주세요.
+`;
+
+        document.getElementById('promptOutput').value = promptText.trim();
+        document.getElementById('resultArea').style.display = 'block';
+        document.getElementById('resultArea').scrollIntoView({behavior: 'smooth'});
+    }
+
+    function copyToClipboard() {
+        const copyText = document.getElementById("promptOutput");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            alert("복사 완료! \nAI에게 붙여넣기만 하면 여행 계획 끝! ✈️");
+        });
+    }
+</script>
+
+</body>
+</html>
