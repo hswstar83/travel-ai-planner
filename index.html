@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✈️ AI 여행 계획 생성기</title>
+    <title>✈️ AI 여행 계획 자동 생성기</title>
     <style>
         :root { --primary: #007AFF; --bg: #F2F2F7; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; margin: 0; }
@@ -27,13 +27,6 @@
         .loader { display: none; text-align: center; margin-top: 20px; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* 플랜 B (접속 폭주 시) 스타일 */
-        #fallbackArea { display: none; margin-top: 20px; padding: 20px; background: #fff8e1; border-radius: 12px; border: 1px solid #ffe082; }
-        #fallbackArea h3 { margin-top: 0; color: #f57f17; font-size: 16px; }
-        #fallbackArea p { font-size: 13px; color: #f57f17; margin-bottom: 10px; }
-        #manualPrompt { background: #fff; border: 1px solid #ffe082; color: #555; font-size: 12px; height: 120px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
-        .copy-btn { background-color: #fbc02d; color: #333; margin-top: 10px; }
 
         .footer { text-align: center; margin-top: 30px; font-size: 11px; color: #aaa; }
     </style>
@@ -60,19 +53,12 @@
     
     <div class="loader" id="loader">
         <div class="spinner"></div>
-        <p style="font-size: 13px; color: #666;">AI가 최적의 경로를 분석 중입니다...<br>(약 10~15초 소요)</p>
+        <p style="font-size: 13px; color: #666;">AI가 최적의 경로를 분석 중입니다...<br>(약 10~20초 소요)</p>
     </div>
 
     <div id="resultArea">
         <h3 style="margin-bottom: 10px;">📍 AI가 제안하는 여행 계획</h3>
         <div id="output"></div>
-    </div>
-
-    <div id="fallbackArea">
-        <h3>⚠️ AI 서버 접속량 폭주</h3>
-        <p>현재 이용자가 많아 자동 생성이 지연되고 있습니다.<br>대신 아래 <b>주문서</b>를 복사해서 제미나이/챗GPT에 붙여넣으세요!</p>
-        <textarea id="manualPrompt" readonly></textarea>
-        <button class="copy-btn" onclick="copyPrompt()">📋 주문서 복사하기</button>
     </div>
 
     <div class="footer">
@@ -89,14 +75,13 @@
 
         if(!dest || !dates) { alert("여행지와 날짜는 꼭 입력해주세요!"); return; }
 
-        // 로딩 시작
+        // 로딩 시작 (버튼 비활성화)
         document.getElementById('generateBtn').disabled = true;
         document.getElementById('generateBtn').innerText = "분석 중...";
         document.getElementById('loader').style.display = 'block';
         document.getElementById('resultArea').style.display = 'none';
-        document.getElementById('fallbackArea').style.display = 'none';
 
-        // AI에게 보낼 프롬프트 (자동 전송용)
+        // AI에게 보낼 프롬프트
         const prompt = `
 # 역할: 당신은 20년 경력의 베트남/동남아 전문 여행 가이드입니다.
 # 목표: 아래 정보를 바탕으로 여행자가 바로 사용할 수 있는 구체적인 여행 계획서를 작성해주세요.
@@ -117,7 +102,7 @@
 `;
 
         try {
-            // 1단계: API 호출 (AI에게 요청 보내기)
+            // API 호출
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -126,12 +111,12 @@
 
             const data = await response.json();
             
-            // 2단계: 결과 확인
+            // 에러 체크
             if (!response.ok || data.error) {
-                throw new Error("API Error");
+                throw new Error(data.error || "API Error");
             }
 
-            // 3단계: 화면에 결과 보여주기 (줄바꿈, 볼드체 처리)
+            // 결과 화면 표시 (줄바꿈, 볼드체 처리)
             let formattedResult = data.result
                 .replace(/\n/g, '<br>') // 줄바꿈
                 .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#007AFF;">$1</strong>') // 강조
@@ -142,25 +127,14 @@
             document.getElementById('resultArea').style.display = 'block';
 
         } catch (error) {
-            // 실패 시 복사 모드로 전환
             console.error("Error:", error);
-            document.getElementById('manualPrompt').value = prompt.trim();
-            document.getElementById('fallbackArea').style.display = 'block';
-            alert("AI 연결이 지연되어 '주문서 복사 모드'로 전환합니다.");
+            alert("죄송합니다. 일시적인 오류가 발생했습니다.\n잠시 후 다시 시도해주세요. 🙏");
         } finally {
+            // 로딩 종료 및 버튼 복구
             document.getElementById('generateBtn').disabled = false;
             document.getElementById('generateBtn').innerText = "✨ 여행 계획 생성하기";
             document.getElementById('loader').style.display = 'none';
         }
-    }
-
-    function copyPrompt() {
-        const copyText = document.getElementById("manualPrompt");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(copyText.value).then(() => {
-            alert("주문서 복사 완료! Gemini 앱에 붙여넣으세요.");
-        });
     }
 </script>
 
