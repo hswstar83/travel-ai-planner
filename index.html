@@ -1,71 +1,3 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✈️ AI 여행 계획 자동 생성기</title>
-    <style>
-        :root { --primary: #007AFF; --bg: #F2F2F7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; margin: 0; }
-        .container { max-width: 600px; width: 100%; background: #fff; border-radius: 20px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        h1 { text-align: center; font-size: 22px; margin-bottom: 5px; color: #333; }
-        .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 25px; line-height: 1.4; }
-        
-        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #333; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; font-family: inherit; font-size: 16px; -webkit-appearance: none; }
-        input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
-        
-        button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 14px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; -webkit-appearance: none; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        button:active { transform: scale(0.98); }
-        
-        /* 결과 화면 스타일 */
-        #resultArea { display: none; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-        #output { white-space: pre-wrap; line-height: 1.6; font-size: 15px; color: #333; background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #eee; }
-        
-        /* 로딩 애니메이션 */
-        .loader { display: none; text-align: center; margin-top: 20px; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .footer { text-align: center; margin-top: 30px; font-size: 11px; color: #aaa; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>✈️ AI 여행 계획 자동 생성기</h1>
-    <p class="subtitle">여행 정보를 입력하면<br>AI가 상세한 계획표를 즉시 만들어드립니다.</p>
-
-    <label>여행지</label>
-    <input type="text" id="destination" placeholder="예: 베트남 다낭, 나만 리트리트">
-
-    <label>날짜 & 기간</label>
-    <input type="text" id="dates" placeholder="예: 12월 19일 ~ 23일 (4박 5일)">
-
-    <label>인원 구성</label>
-    <input type="text" id="members" placeholder="예: 부모님(70대), 부부, 아이(7세)">
-
-    <label>특별 요청 / 궁금한 점</label>
-    <textarea id="special" rows="2" placeholder="예: 수영장 온수 여부 확인, 키즈 마사지 추천, 고수 빼주세요"></textarea>
-
-    <button id="generateBtn" onclick="generatePlan()">✨ 여행 계획 생성하기</button>
-    
-    <div class="loader" id="loader">
-        <div class="spinner"></div>
-        <p style="font-size: 13px; color: #666;">AI가 최적의 경로를 분석 중입니다...<br>(약 10~20초 소요)</p>
-    </div>
-
-    <div id="resultArea">
-        <h3 style="margin-bottom: 10px;">📍 AI가 제안하는 여행 계획</h3>
-        <div id="output"></div>
-    </div>
-
-    <div class="footer">
-        © 2025 Smart Travel Helper | Powered by Gemini
-    </div>
-</div>
-
 <script>
     async function generatePlan() {
         const dest = document.getElementById('destination').value;
@@ -75,68 +7,57 @@
 
         if(!dest || !dates) { alert("여행지와 날짜는 꼭 입력해주세요!"); return; }
 
-        // 로딩 시작 (버튼 비활성화)
+        // 로딩 시작
         document.getElementById('generateBtn').disabled = true;
         document.getElementById('generateBtn').innerText = "분석 중...";
         document.getElementById('loader').style.display = 'block';
         document.getElementById('resultArea').style.display = 'none';
 
-        // AI에게 보낼 프롬프트
         const prompt = `
-# 역할: 당신은 20년 경력의 베트남/동남아 전문 여행 가이드입니다.
-# 목표: 아래 정보를 바탕으로 여행자가 바로 사용할 수 있는 구체적인 여행 계획서를 작성해주세요.
-
-- 여행지: ${dest}
-- 일정: ${dates}
-- 인원: ${members}
-- 요청사항: ${special}
-
-# 작성 가이드 (필수 포함)
-1. [날씨 & 옷차림]: 위성 날씨 데이터를 기반으로 구체적인 옷차림과 우산 필요 여부.
-2. [이동 & 교통]: 공항 픽업, 그랩 예상 비용(4인승/7인승), 추천 이동 수단.
-3. [안전 & 병원]: 최근 현지 이슈 팩트체크, 숙소 근처 비상 병원/약국 위치.
-4. [상세 일정표]: 3대 가족의 체력을 고려한 여유로운 일정 (맛집은 구글평점 4.5 이상 추천 및 구글맵 검색 팁 포함).
-5. [호텔 문의 메일]: 요청사항(${special})을 반영한 영어 문의 메일 초안.
-
-결과는 가독성 좋게 **제목**과 - 목록을 사용하여 깔끔하게 정리해주세요.
+# 역할: 20년 경력 베트남 전문 여행 가이드
+# 여행 정보: ${dest} / ${dates} / ${members}
+# 요청사항: ${special}
+# 필수 포함: 날씨, 안전정보, 추천일정(구글맵 링크), 호텔메일초안
 `;
 
         try {
-            // API 호출
+            // 1. API 호출
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: prompt })
             });
 
-            const data = await response.json();
-            
-            // 에러 체크
-            if (!response.ok || data.error) {
-                throw new Error(data.error || "API Error");
+            // 2. 404 에러 체크 (파일 위치 틀림)
+            if (response.status === 404) {
+                throw new Error("❌ '/api/generate.js' 파일을 찾을 수 없습니다.\n깃허브에 'api' 폴더를 만들고 그 안에 파일을 넣었는지 확인해주세요.");
             }
 
-            // 결과 화면 표시 (줄바꿈, 볼드체 처리)
+            const data = await response.json();
+            
+            // 3. 500 에러 체크 (API 키 문제 등)
+            if (!response.ok || data.error) {
+                throw new Error("❌ 서버 에러: " + (data.error || "원인 불명"));
+            }
+
+            // 4. 성공 시 결과 표시
             let formattedResult = data.result
-                .replace(/\n/g, '<br>') // 줄바꿈
-                .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#007AFF;">$1</strong>') // 강조
-                .replace(/###/g, '') // 마크다운 기호 제거
-                .replace(/- /g, '• '); // 목록 기호 변경
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#007AFF;">$1</strong>')
+                .replace(/###/g, '')
+                .replace(/- /g, '• ');
 
             document.getElementById('output').innerHTML = formattedResult;
             document.getElementById('resultArea').style.display = 'block';
 
         } catch (error) {
             console.error("Error:", error);
-            alert("죄송합니다. 일시적인 오류가 발생했습니다.\n잠시 후 다시 시도해주세요. 🙏");
+            // 여기가 핵심! 진짜 에러 내용을 팝업으로 띄워줍니다.
+            alert(error.message); 
         } finally {
-            // 로딩 종료 및 버튼 복구
             document.getElementById('generateBtn').disabled = false;
             document.getElementById('generateBtn').innerText = "✨ 여행 계획 생성하기";
             document.getElementById('loader').style.display = 'none';
         }
     }
 </script>
-
-</body>
-</html>
